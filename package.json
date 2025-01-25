@@ -16,5 +16,9 @@
     "email": "",
     "url": ""
   },
-  "type": "tool"
+  "type": "tool",
+  "category": "Node Tool",
+  "dependencies": {
+      "com.unity.localization": "1.5.4"
+  }
 }

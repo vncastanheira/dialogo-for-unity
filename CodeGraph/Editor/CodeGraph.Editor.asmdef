@@ -2,7 +2,8 @@
     "name": "CodeGraph.Editor",
     "rootNamespace": "CodeGraph.Editor",
     "references": [
-        "CodeGraph"
+        "CodeGraph",
+        "Unity.Localization"
     ],
     "includePlatforms": [
         "Editor"

@@ -2,7 +2,8 @@
     "name": "DialogueGraph",
     "rootNamespace": "DialogueGraph",
     "references": [
-        "GUID:6bf5ccfccc722f64c80979d292edb752"
+        "GUID:6bf5ccfccc722f64c80979d292edb752",
+        "GUID:eec0964c48f6f4e40bc3ec2257ccf8c5"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

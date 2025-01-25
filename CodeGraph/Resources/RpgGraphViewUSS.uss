@@ -8,9 +8,9 @@ CodeGraphView {
 	--line-color: rgb(32, 32, 32);
 }
 .code-graph-node {
-	background-color: grey;
-	width: 200px;
-	height: 80px;
+	background-color: dark-grey;
+	width: 210px;
+/* 	height: 200px; */
 }
 
 .flow-output {
@@ -19,4 +19,17 @@ CodeGraphView {
 
 .flow-input {
 	background-color: #502350;
+}
+
+.dialogue-btn {
+	height: 30px;
+}
+.dialogue-textfield {
+	margin-left: 5%;
+	flex-direction: column;
+	overflow: scroll;
+	white-space: normal;
+	color: black;
+	width: 90%;
+	height: 100px;
 }

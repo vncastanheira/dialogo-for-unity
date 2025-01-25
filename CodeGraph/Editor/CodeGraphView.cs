@@ -4,9 +4,10 @@ using System.Linq;
 using System.Reflection;
 using UnityEditor;
 using UnityEditor.Experimental.GraphView;
+using UnityEditor.UIElements;
 using UnityEngine;
+using UnityEngine.Localization.Settings;
 using UnityEngine.UIElements;
-using static UnityEditor.Experimental.GraphView.GraphView;
 
 namespace CodeGraph.Editor
 {
@@ -67,6 +68,8 @@ namespace CodeGraph.Editor
             connectionsToAdd = new();
 
             graphViewChanged += OnGraphViewChangedEvent;
+
+            LocalizationSettings.PreloadBehavior = PreloadBehavior.PreloadAllLocales;
         }
 
         private Port GeneratePort(CodeGraphEditorNode editorNode, Direction direction, Port.Capacity capacity = Port.Capacity.Single)
@@ -116,7 +119,6 @@ namespace CodeGraph.Editor
             Undo.RecordObject(m_serializedObject.targetObject, "Added Node");
             nodesToAdd.Add(node);
             EditorUtility.SetDirty(m_codeGraph);
-            //m_serializedObject.Update();
 
             AddNodeToGraph(node);
         }
@@ -124,7 +126,6 @@ namespace CodeGraph.Editor
         private void AddNodeToGraph(CodeGraphNode node)
         {
             node.typeName = node.GetType().AssemblyQualifiedName;
-
             var editorNode = new CodeGraphEditorNode(node);
             editorNode.SetPosition(node.position);
 
@@ -161,12 +162,93 @@ namespace CodeGraph.Editor
 
             editorNode.RefreshExpandedState();
             editorNode.RefreshPorts();
+
+            ExposeProperties(node, editorNode);
         }
+
+        #region Expose Properties
+        private void ExposeProperties(CodeGraphNode node, CodeGraphEditorNode editorNode)
+        {
+            var nodeIndex = m_codeGraph.Nodes.IndexOf(node);
+            if (nodeIndex != -1)
+            {
+                ExposeSerialized(node, nodeIndex, editorNode);
+                return;
+            }
+
+            nodeIndex = nodesToAdd.IndexOf(node);
+            if (nodeIndex != -1)
+                ExposeRuntime(node, editorNode);
+        }
+
+        private void ExposeSerialized(CodeGraphNode node, int nodeIndex, CodeGraphEditorNode editorNode)
+        {
+            var nodesProperty = m_serializedObject.FindProperty("nodes");
+
+            var currentNodeProperty = nodesProperty.GetArrayElementAtIndex(nodeIndex);
+
+            var fieldInfos = node.GetType().GetFields();
+            foreach (var fi in fieldInfos)
+            {
+                var isExposed = fi.GetCustomAttribute<ExposeAttribute>();
+                if (isExposed != null)
+                {
+                    var exposedSerializedProperty = currentNodeProperty.FindPropertyRelative(fi.Name);
+                    var bindableElement = CreateBindableElement(fi, editorNode);
+                    if(bindableElement != null)
+                    {
+                        bindableElement.BindProperty(exposedSerializedProperty);
+                    }
+                    else 
+                    {
+                        var nodePropertyIType = fi.FieldType.GetInterface("INodeProperty");
+                        if (nodePropertyIType != null)
+                        {
+                            var fieldValue = (INodeProperty) fi.GetValue(node);
+                            var visualElement = fieldValue.Draw(exposedSerializedProperty);
+                            editorNode.Add(visualElement);
+                        }
+                    }
+                }
+            }
+        }
+
+        private void ExposeRuntime(CodeGraphNode node, CodeGraphEditorNode editorNode)
+        {
+            var fieldInfos = node.GetType().GetFields();
+            foreach (var fi in fieldInfos)
+            {
+                var isExposed = fi.GetCustomAttribute<ExposeAttribute>();
+                if (isExposed != null)
+                    CreateBindableElement(fi, editorNode);
+            }
+        }
+
+        private BindableElement CreateBindableElement(FieldInfo fi, CodeGraphEditorNode editorNode)
+        {
+            if (fi.FieldType == typeof(string))
+            {
+                TextField textField = new(fi.Name, -1, multiline: true, isPasswordField: false, ' ');
+                textField.AddToClassList("dialogue-textfield");
+                editorNode.Add(textField);
+                return textField;
+            }
+            else if (fi.FieldType == typeof(int))
+            {
+                IntegerField intField = new(fi.Name);
+                editorNode.Add(intField);
+                return intField;
+            }
+
+            return null;
+        }
+
+        #endregion
 
         public void OnSaveChanges()
         {
             // add nodes
-            if(nodesToAdd != null && nodesToAdd.Count > 0)
+            if (nodesToAdd != null && nodesToAdd.Count > 0)
             {
                 foreach (var node in nodesToAdd)
                 {
@@ -216,7 +298,7 @@ namespace CodeGraph.Editor
             }
 
             // on remove
-            if(graphViewChange.elementsToRemove != null)
+            if (graphViewChange.elementsToRemove != null)
             {
                 elementsToRemove = graphViewChange.elementsToRemove?.OfType<CodeGraphEditorNode>().ToList();
 
@@ -225,7 +307,7 @@ namespace CodeGraph.Editor
                     nodesToAdd.Remove(elem.GraphNode);
                 }
             }
-            
+
             // connections
             if (graphViewChange.edgesToCreate != null)
             {

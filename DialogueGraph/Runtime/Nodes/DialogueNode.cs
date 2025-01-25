@@ -6,13 +6,13 @@ namespace DialogueGraph
     [NodeInfo("Dialogue", "RPG/Dialogue")]
     public class DialogueNode : InOutNode
     {
-        [SerializeField]
-        public string dialogue;
+        [SerializeField, Expose]
+        public LocalizedTextGroup localizedTextGroup;
 
         public DialogueNode()
             :base()
         {
-            dialogue = string.Empty;
+            localizedTextGroup = new();
         }
     }
 }
