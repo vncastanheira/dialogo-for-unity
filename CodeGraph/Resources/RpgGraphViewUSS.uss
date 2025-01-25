@@ -1,0 +1,22 @@
+CodeGraphView {
+	flex-grow: 1;
+}
+#Grid {
+	--thick-lines: 0;
+	--spacing: 15;
+	--grid-background-color: rgb(35, 35, 35);
+	--line-color: rgb(32, 32, 32);
+}
+.code-graph-node {
+	background-color: grey;
+	width: 200px;
+	height: 80px;
+}
+
+.flow-output {
+	background-color: #202350;
+}
+
+.flow-input {
+	background-color: #502350;
+}

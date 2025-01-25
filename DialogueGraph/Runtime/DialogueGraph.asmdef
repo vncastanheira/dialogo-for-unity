@@ -1,0 +1,16 @@
+{
+    "name": "DialogueGraph",
+    "rootNamespace": "DialogueGraph",
+    "references": [
+        "GUID:6bf5ccfccc722f64c80979d292edb752"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

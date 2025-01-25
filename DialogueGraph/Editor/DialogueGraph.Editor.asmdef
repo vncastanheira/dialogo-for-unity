@@ -1,0 +1,20 @@
+{
+    "name": "DialogueGraph.Editor",
+    "rootNamespace": "DialogueGraph.Editor",
+    "references": [
+        "GUID:467f3e82c6849894f836bedadee666b3",
+        "GUID:6bf5ccfccc722f64c80979d292edb752",
+        "GUID:436211f0813de6d40ab573ecf976847d"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
