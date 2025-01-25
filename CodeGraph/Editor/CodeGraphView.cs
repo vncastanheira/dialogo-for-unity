@@ -6,6 +6,7 @@ using UnityEditor;
 using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 using UnityEngine.UIElements;
+using static UnityEditor.Experimental.GraphView.GraphView;
 
 namespace CodeGraph.Editor
 {
@@ -22,6 +23,13 @@ namespace CodeGraph.Editor
         public Dictionary<string, CodeGraphEditorNode> m_nodeDictionary;
 
         private CodeGraphWindowSearchProvider m_searchProvider;
+
+        #region Changed Elements
+        List<CodeGraphEditorNode> elementsToRemove;
+        List<CodeGraphNode> nodesToAdd;
+        List<CodeGraphConnection> connectionsToAdd;
+
+        #endregion
 
         public CodeGraphView(SerializedObject serializedObject, CodeGraphEditorWindow window)
         {
@@ -54,6 +62,9 @@ namespace CodeGraph.Editor
 
             DrawNodes();
             DrawConnections();
+
+            nodesToAdd = new();
+            connectionsToAdd = new();
 
             graphViewChanged += OnGraphViewChangedEvent;
         }
@@ -100,11 +111,12 @@ namespace CodeGraph.Editor
             }
         }
 
-        public void Add(CodeGraphNode node)
+        public void AddNode(CodeGraphNode node)
         {
             Undo.RecordObject(m_serializedObject.targetObject, "Added Node");
-            m_codeGraph.Nodes.Add(node);
-            m_serializedObject.Update();
+            nodesToAdd.Add(node);
+            EditorUtility.SetDirty(m_codeGraph);
+            //m_serializedObject.Update();
 
             AddNodeToGraph(node);
         }
@@ -117,7 +129,6 @@ namespace CodeGraph.Editor
             editorNode.SetPosition(node.position);
 
             var fieldInfos = node.GetType().GetFields();
-            int index = 0;
             foreach (var fi in fieldInfos)
             {
                 var outAttribute = fi.GetCustomAttribute<OutAttribute>();
@@ -152,6 +163,51 @@ namespace CodeGraph.Editor
             editorNode.RefreshPorts();
         }
 
+        public void OnSaveChanges()
+        {
+            // add nodes
+            if(nodesToAdd != null && nodesToAdd.Count > 0)
+            {
+                foreach (var node in nodesToAdd)
+                {
+                    m_codeGraph.Nodes.Add(node);
+                }
+
+                nodesToAdd.Clear();
+            }
+
+            // save nodes positions
+            foreach (var editorNode in GraphEditorNodes)
+            {
+                editorNode.SavePosition();
+            }
+
+            // save connections
+            foreach (var connection in connectionsToAdd)
+            {
+                m_codeGraph.Connections.Add(connection);
+            }
+            connectionsToAdd.Clear();
+
+            // remove nodes
+            var nodes = elementsToRemove?.OfType<CodeGraphEditorNode>().ToList();
+            if (nodes?.Count > 0)
+            {
+                Undo.RecordObject(m_serializedObject.targetObject, "Remove Node");
+                for (int i = nodes.Count - 1; i >= 0; i--)
+                {
+                    var node = nodes[i].GraphNode;
+
+                    m_codeGraph.Nodes.Remove(nodes[i].GraphNode);
+                    m_nodeDictionary.Remove(nodes[i].GraphNode.Id);
+                    m_graphNodes.Remove(nodes[i]);
+                    m_codeGraph.Connections.RemoveAll(c => c.inputNodeId == node.Id || c.outputNodeId == node.Id);
+                }
+            }
+
+            m_serializedObject.Update();
+        }
+
         private GraphViewChange OnGraphViewChangedEvent(GraphViewChange graphViewChange)
         {
             if (graphViewChange.movedElements != null)
@@ -159,22 +215,18 @@ namespace CodeGraph.Editor
                 Undo.RecordObject(m_serializedObject.targetObject, "Moved Elements");
             }
 
-            if (graphViewChange.elementsToRemove != null)
+            // on remove
+            if(graphViewChange.elementsToRemove != null)
             {
-                var nodes = graphViewChange.elementsToRemove.OfType<CodeGraphEditorNode>().ToList();
-                if (nodes.Count > 0)
+                elementsToRemove = graphViewChange.elementsToRemove?.OfType<CodeGraphEditorNode>().ToList();
+
+                foreach (var elem in elementsToRemove)
                 {
-                    Undo.RecordObject(m_serializedObject.targetObject, "Remove Node");
-                    for (int i = nodes.Count - 1; i >= 0; i--)
-                    {
-                        m_codeGraph.Nodes.Remove(nodes[i].GraphNode);
-                        m_nodeDictionary.Remove(nodes[i].GraphNode.Id);
-                        m_graphNodes.Remove(nodes[i]);
-                        m_serializedObject.Update();
-                    }
+                    nodesToAdd.Remove(elem.GraphNode);
                 }
             }
-
+            
+            // connections
             if (graphViewChange.edgesToCreate != null)
             {
                 Undo.RecordObject(m_serializedObject.targetObject, "Added Connections");
@@ -193,8 +245,11 @@ namespace CodeGraph.Editor
                         outputNodeId = outputNodeEditor.GraphNode.Id,
                         outputFieldName = outputEditorPortData.fieldName
                     };
-                    m_codeGraph.Connections.Add(connection);
+                    connectionsToAdd.Add(connection);
                 }
+
+                if (connectionsToAdd.Count > 0)
+                    EditorUtility.SetDirty(m_codeGraph);
             }
 
             return graphViewChange;

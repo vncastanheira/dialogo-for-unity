@@ -89,11 +89,7 @@ namespace CodeGraph.Editor
 
         public override void SaveChanges()
         {
-            foreach (var editorNode in currentView.GraphEditorNodes)
-            {
-                editorNode.SavePosition();
-            }
-
+            currentView.OnSaveChanges();
             base.SaveChanges();
         }
     }

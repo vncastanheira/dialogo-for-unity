@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using UnityEditor;
 using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -104,7 +105,7 @@ namespace CodeGraph.Editor
 
             var node = (CodeGraphNode)element.target;
             node.SetPosition(new Rect(graphMousePosition, new Vector2()));
-            graph.Add(node);
+            graph.AddNode(node);
 
             return true;
         }
